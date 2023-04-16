@@ -59,11 +59,14 @@ export class AssetsGenerator {
 
         const childPaths = FS.readdirSync(currPath);
         for (let i = 0; i < childPaths.length; i++) {
-            const childNmae = childPaths[i];
-            const childPath = PATH.join(currPath, childNmae);
+            const childName = childPaths[i];
+            const childPath = PATH.join(currPath, childName);
 
             const stat = FS.statSync(childPath);
             if (!stat.isDirectory()) { continue; }
+
+            if (childName.match('[0-9.]+?x')) { continue; }
+            if (childName.match('dark')) { continue; }
 
             const relativePath = PATH.relative(projectPath, childPath);
             const className = this.toClassName(relativePath);
@@ -124,6 +127,9 @@ export class AssetsGenerator {
             for (let i = 0; i < childPaths.length; i++) {
                 const childName = childPaths[i];
                 if (childName.startsWith('.')) { continue; }
+
+                if (childName.match('[0-9.]+?x')) { continue; }
+                if (childName.match('dark')) { continue; }
 
                 const childPath = PATH.join(currPath, childName);
                 if (!FS.existsSync(childPath)) { continue; }
