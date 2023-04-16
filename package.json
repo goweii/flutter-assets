@@ -1,8 +1,24 @@
 {
   "name": "flutter-assets",
   "displayName": "Flutter Assets",
-  "description": "自动生成 Flutter assets 映射的 dart 管理类",
+  "description": "Automatically generate a dart class for managing Flutter assets.",
   "version": "0.0.1",
+  "publisher": "goweii",
+  "icon": "icon.png",
+  "galleryBanner": {
+    "color": "#31b9f5",
+    "theme": "dark"
+  },
+  "license": "SEE LICENSE IN LICENSE.md",
+  "bugs": {
+    "url": "https://github.com/goweii/flutter-assets/issues",
+    "email": "goweii@163.com"
+  },
+  "homepage": "https://github.com/goweii/flutter-assets/blob/main/README.md",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/goweii/flutter-assets.git"
+  },
   "engines": {
     "vscode": "^1.77.0"
   },

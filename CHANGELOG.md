@@ -1,0 +1,1 @@
+For release notes see [releases](https://github.com/goweii/flutter-assets/releases).
