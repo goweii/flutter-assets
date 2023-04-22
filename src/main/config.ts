@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as yaml from 'yaml';
 import * as fs from 'fs';
 import * as path from 'path';
+import { Log } from './log';
 
 export class Config {
     static instance = new Config();
@@ -22,21 +23,14 @@ export class Config {
         return name;
     };
 
-    toString = (): string => `Config {
-        assetsPath: '${this.assetsPath}'
-        outputPath: '${this.outputPath}'
-        outputName: '${this.outputName}'
-        ignoreExt: '${this.ignoreExt}'
-    }`;
-
     update(): void {
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (!workspaceFolders) { return; }
         const workspaceFolder = workspaceFolders[0];
-        console.log('[Flutter Assets] project: ' + workspaceFolder.uri.path);
+        Log.d('project: ' + workspaceFolder.uri.path);
 
         const yamlPath = path.join(workspaceFolder.uri.path, "pubspec.yaml");
-        console.log('[Flutter Assets] pubspec.yaml: ' + yamlPath);
+        Log.d('pubspec.yaml: ' + yamlPath);
 
         if (!fs.existsSync(yamlPath)) {
             vscode.window.showErrorMessage('Flutter Assets: Not a flutter project!');
@@ -45,7 +39,7 @@ export class Config {
         const yamlObject = yaml.parse(fs.readFileSync(yamlPath, 'utf8'));
         const yamlConfig = yamlObject['flutter-assets'];
         if (!yamlConfig) {
-            console.info('[Flutter Assets] flutter-assets undefined');
+            Log.d('flutter-assets undefined');
             return;
         }
 
@@ -58,6 +52,6 @@ export class Config {
         const ignoreExt = yamlConfig['ignore-ext'];
         if (ignoreExt !== undefined) { this.ignoreExt = ignoreExt; }
 
-        console.info('[Flutter Assets] config: ' + this);
+        Log.i('config: ', this);
     }
 }
