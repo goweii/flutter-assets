@@ -1,6 +1,5 @@
 import * as chokidar from "chokidar";
 import * as fs from "fs";
-import * as path from "path";
 import * as vscode from "vscode";
 import { Config } from "./config";
 import { Log } from "./log";
@@ -19,7 +18,7 @@ export class AssetsWatcher {
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (!workspaceFolders) { return; }
         const workspaceFolder = workspaceFolders[0];
-        this.dir = path.join(workspaceFolder.uri.path, Config.instance.assetsPath);
+        this.dir  = vscode.Uri.joinPath(workspaceFolder.uri, Config.instance.assetsPath).fsPath;
         this.watcher = chokidar.watch(this.dir, {
             ignored: /(^|[\/\\])\..*$/
         }).on('all', this.onEvent);
@@ -40,7 +39,7 @@ export class AssetsWatcher {
         path: string,
         stats?: fs.Stats
     ) {
-        Log.d('onEvent', eventName, path, stats);
+        // Log.d('onEvent', eventName, path, stats);
         if (this.timeout !== undefined) {
             clearTimeout(this.timeout);
             this.timeout = undefined;

@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import * as yaml from 'yaml';
 import * as fs from 'fs';
-import * as path from 'path';
 import { Log } from './log';
 
 export class Config {
@@ -27,16 +26,17 @@ export class Config {
         const workspaceFolders = vscode.workspace.workspaceFolders;
         if (!workspaceFolders) { return; }
         const workspaceFolder = workspaceFolders[0];
-        Log.d('project: ' + workspaceFolder.uri.path);
+        Log.d('project: ' + workspaceFolder.uri);
 
-        const yamlPath = path.join(workspaceFolder.uri.path, "pubspec.yaml");
+        const yamlPath = vscode.Uri.joinPath(workspaceFolder.uri, "pubspec.yaml");
         Log.d('pubspec.yaml: ' + yamlPath);
 
-        if (!fs.existsSync(yamlPath)) {
+        if (!fs.existsSync(yamlPath.fsPath)) {
             vscode.window.showErrorMessage('Flutter Assets: Not a flutter project!');
+            return;
         }
 
-        const yamlObject = yaml.parse(fs.readFileSync(yamlPath, 'utf8'));
+        const yamlObject = yaml.parse(fs.readFileSync(yamlPath.fsPath, 'utf8'));
         const yamlConfig = yamlObject['flutter-assets'];
         if (!yamlConfig) {
             Log.d('flutter-assets undefined');

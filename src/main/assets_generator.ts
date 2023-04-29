@@ -11,29 +11,34 @@ export class AssetsGenerator {
         if (!workspaceFolders) { return; }
         const workspaceFolder = workspaceFolders[0];
 
-        const projectPath = workspaceFolder.uri.path;
+        const projectPath = workspaceFolder.uri;
 
         const config = Config.instance;
 
-        const assetsPath = PATH.join(projectPath, config.assetsPath);
+        const assetsPath = vscode.Uri.joinPath(workspaceFolder.uri, config.assetsPath);
 
-        const outputDirPath = PATH.join(projectPath, config.outputPath);
-        const outputPath = PATH.join(outputDirPath, `${config.outputName}.dart`);
+        const outputDirPath = vscode.Uri.joinPath(projectPath, config.outputPath);
+        const outputPath = vscode.Uri.joinPath(outputDirPath, `${config.outputName}.dart`);
 
-        if (!FS.existsSync(outputDirPath)) {
-            FS.mkdirSync(outputDirPath);
+        if (!FS.existsSync(outputDirPath.fsPath)) {
+            FS.mkdirSync(outputDirPath.fsPath);
         }
 
         const content = this.generateFileContent(config.className(), projectPath, assetsPath, config.ignoreExt);
-        FS.writeFileSync(outputPath, content);
+        FS.writeFileSync(outputPath.fsPath, content);
     }
 
-    private generateFileContent(className: string, projectPath: string, assetsPath: string, ignoreExt: boolean): string {
-        if (!FS.existsSync(assetsPath)) {
+    private generateFileContent(
+        className: string,
+        projectPath: vscode.Uri,
+        assetsPath: vscode.Uri,
+        ignoreExt: boolean
+    ): string {
+        if (!FS.existsSync(assetsPath.fsPath)) {
             return '';
         }
 
-        const stat = FS.statSync(assetsPath);
+        const stat = FS.statSync(assetsPath.fsPath);
         if (!stat.isDirectory()) {
             throw Error("'assets-path' is not a dir!");
         }
@@ -50,25 +55,25 @@ export class AssetsGenerator {
 
     private generateClassesContent(
         className: string,
-        projectPath: string,
-        currPath: string,
+        projectPath: vscode.Uri,
+        currPath: vscode.Uri,
         deepth: number,
         ignoreExt: boolean
     ): string {
         let content = this.generateClassContent(className, projectPath, currPath, deepth, ignoreExt);
 
-        const childPaths = FS.readdirSync(currPath);
+        const childPaths = FS.readdirSync(currPath.fsPath);
         for (let i = 0; i < childPaths.length; i++) {
             const childName = childPaths[i];
-            const childPath = PATH.join(currPath, childName);
+            const childPath = vscode.Uri.joinPath(currPath, childName);
 
-            const stat = FS.statSync(childPath);
+            const stat = FS.statSync(childPath.fsPath);
             if (!stat.isDirectory()) { continue; }
 
             if (childName.match('[0-9.]+?x')) { continue; }
             if (childName.match('dark')) { continue; }
 
-            const relativePath = PATH.relative(projectPath, childPath);
+            const relativePath = PATH.relative(projectPath.fsPath, childPath.fsPath);
             const className = this.toClassName(relativePath);
 
             content += '\n';
@@ -80,8 +85,8 @@ export class AssetsGenerator {
 
     private generateClassContent(
         className: string,
-        projectPath: string,
-        currPath: string,
+        projectPath: vscode.Uri,
+        currPath: vscode.Uri,
         deepth: number,
         ignoreExt: boolean
     ): string {
@@ -108,22 +113,22 @@ export class AssetsGenerator {
     }
 
     private generateFieldLines(
-        projectPath: string,
-        currPath: string,
+        projectPath: vscode.Uri,
+        currPath: vscode.Uri,
         staticField: boolean,
         ignoreExt: boolean,
         onlyClassOrString: boolean,
     ): string[] {
         const lines = new Array<string>();
-        if (!FS.existsSync(currPath)) {
+        if (!FS.existsSync(currPath.fsPath)) {
             return lines;
         }
-        const stat = FS.statSync(currPath);
+        const stat = FS.statSync(currPath.fsPath);
         if (stat.isFile()) {
             return lines;
         }
         if (stat.isDirectory()) {
-            const childPaths = FS.readdirSync(currPath);
+            const childPaths = FS.readdirSync(currPath.fsPath);
             for (let i = 0; i < childPaths.length; i++) {
                 const childName = childPaths[i];
                 if (childName.startsWith('.')) { continue; }
@@ -131,14 +136,15 @@ export class AssetsGenerator {
                 if (childName.match('[0-9.]+?x')) { continue; }
                 if (childName.match('dark')) { continue; }
 
-                const childPath = PATH.join(currPath, childName);
-                if (!FS.existsSync(childPath)) { continue; }
+                const childPath = vscode.Uri.joinPath(currPath, childName);
+                if (!FS.existsSync(childPath.fsPath)) { continue; }
 
-                const relativePath = PATH.relative(projectPath, childPath);
+                const relativePath = PATH.relative(projectPath.fsPath, childPath.fsPath);
                 const className = this.toClassName(relativePath);
                 const fieldName = this.toFieldName(relativePath, ignoreExt);
+                const assetPath = this.toAssetsPath(relativePath);
 
-                const stat = FS.statSync(childPath);
+                const stat = FS.statSync(childPath.fsPath);
 
                 if (onlyClassOrString && stat.isDirectory()) {
                     if (staticField) {
@@ -151,9 +157,9 @@ export class AssetsGenerator {
 
                 if (!onlyClassOrString && stat.isFile()) {
                     if (staticField) {
-                        lines.push(`static const ${fieldName} = '${relativePath}';`);
+                        lines.push(`static const ${fieldName} = '${assetPath}';`);
                     } else {
-                        lines.push(`final ${fieldName} = '${relativePath}';`);
+                        lines.push(`final ${fieldName} = '${assetPath}';`);
                     }
                     continue;
                 }
@@ -169,6 +175,18 @@ export class AssetsGenerator {
             const split = splits[i];
             if (split.length === 0) { continue; }
             name += '_';
+            name += split;
+        }
+        return name;
+    }
+
+    private toAssetsPath(path: string): string {
+        const splits = path.split(PATH.sep);
+        let name = '';
+        for (let i = 0; i < splits.length; i++) {
+            const split = splits[i];
+            if (split.length === 0) { continue; }
+            if (name.length !== 0) { name += '/'; }
             name += split;
         }
         return name;
