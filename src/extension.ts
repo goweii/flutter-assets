@@ -1,17 +1,25 @@
 import * as vscode from 'vscode';
 import { registerAllCommands } from './main/commands';
-import { Config } from './main/config';
-import { Log } from './main/log';
-import { AssetsWatcher } from './main/assets_watcher';
+import { assetsConfig } from './main/assets_config';
+import { assetsWatcher } from './main/assets_watcher';
+import { pubspecWatcher } from './main/pubspec_watcher';
+import { assetsGenerator } from './main/assets_generator';
 
-export function activate(context: vscode.ExtensionContext) {
-	Log.i('Extension is activate');
-	Config.instance.update();
+export async function activate(context: vscode.ExtensionContext) {
+	console.log('Extension is activate');
+
 	registerAllCommands(context);
-	AssetsWatcher.instance.startWatch();
+
+	await assetsConfig.update();
+	await assetsGenerator.generate();
+
+	pubspecWatcher.startWatch();
+	assetsWatcher.startWatch();
 }
 
 export function deactivate() {
-	Log.i('Extension is deactivated');
-	AssetsWatcher.instance.stopWatch();
+	console.log('Extension is deactivated');
+
+	pubspecWatcher.stopWatch();
+	assetsWatcher.stopWatch();
 }

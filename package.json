@@ -8,7 +8,7 @@
     "vscode",
     "dart"
   ],
-  "version": "0.0.4",
+  "version": "0.0.5",
   "publisher": "goweii",
   "icon": "icon.png",
   "galleryBanner": {
@@ -40,6 +40,10 @@
       {
         "command": "flutter-assets.generate-now",
         "title": "Flutter Assets: Generate Now"
+      },
+      {
+        "command": "flutter-assets.update-config-now",
+        "title": "Flutter Assets: Update Config Now"
       }
     ]
   },
@@ -74,6 +78,5 @@
     "webpack-cli": "^5.0.1"
   },
   "dependencies": {
-    "chokidar": "^3.0.2"
   }
 }
