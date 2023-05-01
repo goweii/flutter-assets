@@ -1,6 +1,7 @@
 import * as path from "path";
 import * as vscode from "vscode";
-import { toSnakeCase } from "./name_utils";
+import { toLowerSnakeCase, toSnakeCase } from "./name_utils";
+import { toUpperCamelCase } from "./name_utils";
 
 export class AssetsNode {
     name: string;
@@ -60,7 +61,7 @@ export class AssetsNode {
     }
 
     private get isVariant(): boolean {
-        return this.name.match(/[0-9.]+?x/) !== null;
+        return this.name.match(/[0-9.]+?x|dark/) !== null;
     }
 
     private get className(): string {
@@ -68,20 +69,45 @@ export class AssetsNode {
     }
 
     private get privateClassName(): string {
-        return '_' + toSnakeCase(this.pathFragments);
+        return '_' + this.className;
+    }
+
+    private get darkVariant(): AssetsNode | undefined {
+        if (this.isRoot) { return undefined; }
+        return this.parent
+            ?.children
+            ?.find(e => e.name === 'dark')
+            ?.children
+            ?.find(e => e.name === this.name);
     }
 
     toDartFileString(
         className: string | undefined = undefined,
         ignoreExt: boolean = false
     ): string {
-        const classContent = this.toDartClassString(className, ignoreExt);
-
-        if (classContent !== undefined) {
-            return classContent;
+        if (className === undefined) {
+            className = toUpperCamelCase(this.pathFragments);
         }
 
-        return '';
+        let fileContent = `// ignore_for_file: unused_field, camel_case_types, non_constant_identifier_names, library_private_types_in_public_api\n\n`;
+        fileContent += `import 'package:flutter/material.dart';\n\n`;
+
+        fileContent += `extension ${className}Ext on BuildContext {\n`;
+        fileContent += `  ${className} get ${toLowerSnakeCase([className])} {\n`;
+        fileContent += `    final themeData = Theme.of(this);\n`;
+        fileContent += `    return ${className}(\n`;
+        fileContent += `      brightness: themeData.brightness,\n`;
+        fileContent += `    );\n`;
+        fileContent += `  }\n`;
+        fileContent += `}\n`;
+
+        const classContent = this.toDartClassString(className, ignoreExt);
+        if (classContent !== undefined) {
+            fileContent += '\n';
+            fileContent += classContent;
+        }
+
+        return fileContent;
     }
 
     toDartClassString(
@@ -93,39 +119,47 @@ export class AssetsNode {
         }
 
         if (className === undefined) {
-            className = toSnakeCase(this.pathFragments);
+            className = toUpperCamelCase(this.pathFragments);
         }
 
         let classContent = `class ${className} {\n`;
-        classContent += `  const ${className}._();\n`;
+        classContent += `  final Brightness _brightness;\n`;
+        classContent += '\n';
+        classContent += `  ${className}({\n`;
+        classContent += `    required Brightness brightness,\n`;
+        classContent += `  })  : _brightness = brightness`;
 
         this.children
+            ?.filter(child => child.isFolder)
             ?.filter(child => !child.isHiden)
             ?.filter(child => !child.isVariant)
+            ?.map((child) => {
+                classContent += ',\n';
+                classContent += `        ${child.fieldName(ignoreExt)} = ${child.privateClassName}(brightness: brightness)`;
+            });
+
+        classContent += ';\n';
+
+        this.children
             ?.filter(child => child.isFolder)
+            ?.filter(child => !child.isHiden)
+            ?.filter(child => !child.isVariant)
             ?.map((child, index) => {
-                if (index === 0) {
-                    classContent += '\n';
-                }
-                if (this.isRoot) {
-                    classContent += `  static const ${child.fieldName(ignoreExt)} = ${child.privateClassName}._();\n`;
-                } else {
-                    classContent += `  final ${child.fieldName(ignoreExt)} = const ${child.privateClassName}._();\n`;
-                }
+                if (index === 0) { classContent += '\n'; }
+                classContent += `  final ${child.privateClassName} ${child.fieldName(ignoreExt)};\n`;
             });
 
         this.children
+            ?.filter(child => child.isFile)
             ?.filter(child => !child.isHiden)
             ?.filter(child => !child.isVariant)
-            ?.filter(child => child.isFile)
             ?.map((child, index) => {
-                if (index === 0) {
-                    classContent += '\n';
-                }
-                if (this.isRoot) {
-                    classContent += `  static const ${child.fieldName(ignoreExt)} = '${child.flutterAssetsPath}';\n`;
-                } else {
+                if (index === 0) { classContent += '\n'; }
+                const darkVariant = child.darkVariant;
+                if (darkVariant === undefined) {
                     classContent += `  final ${child.fieldName(ignoreExt)} = '${child.flutterAssetsPath}';\n`;
+                } else {
+                    classContent += `  String get ${child.fieldName(ignoreExt)} => _brightness == Brightness.light ? '${child.flutterAssetsPath}' : '${darkVariant.flutterAssetsPath}';\n`;
                 }
             });
 
