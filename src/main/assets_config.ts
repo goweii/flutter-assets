@@ -13,7 +13,9 @@ class AssetsConfig {
     outputName: string = AssetsConfig.outputNameDef;
     ignoreExt: boolean = AssetsConfig.ignoreExtDef;
 
-    className = (): string => toUpperCamelCase(this.outputName.split('_'));
+    get className(): string {
+        return toUpperCamelCase(this.outputName.split('_'));
+    }
 
     async update(): Promise<AssetsConfig> {
         const workspaceFolders = vscode.workspace.workspaceFolders;
