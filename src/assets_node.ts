@@ -1,7 +1,7 @@
 import * as path from "path";
 import * as vscode from "vscode";
-import { toLowerSnakeCase, toSnakeCase } from "./name_utils";
-import { toUpperCamelCase } from "./name_utils";
+import { toSnakeCase, toUpperCamelCase } from "./name_utils";
+import { AssetsTemplate } from "./assets_template";
 
 export class AssetsNode {
     name: string;
@@ -69,7 +69,7 @@ export class AssetsNode {
     }
 
     private get privateClassName(): string {
-        return '_' + this.className;
+        return `_${this.className}_dart`;
     }
 
     private get darkVariant(): AssetsNode | undefined {
@@ -82,26 +82,12 @@ export class AssetsNode {
     }
 
     toDartFileString(
-        className: string | undefined = undefined,
         ignoreExt: boolean = false
     ): string {
-        if (className === undefined) {
-            className = toUpperCamelCase(this.pathFragments);
-        }
+        let fileContent = AssetsTemplate.assetsWidgetClassString;
+        fileContent += `\n`;
 
-        let fileContent = `// ignore_for_file: unused_field, camel_case_types, non_constant_identifier_names, library_private_types_in_public_api\n\n`;
-        fileContent += `import 'package:flutter/material.dart';\n\n`;
-
-        fileContent += `extension ${className}Ext on BuildContext {\n`;
-        fileContent += `  ${className} get ${toLowerSnakeCase([className])} {\n`;
-        fileContent += `    final themeData = Theme.of(this);\n`;
-        fileContent += `    return ${className}(\n`;
-        fileContent += `      brightness: themeData.brightness,\n`;
-        fileContent += `    );\n`;
-        fileContent += `  }\n`;
-        fileContent += `}\n`;
-
-        const classContent = this.toDartClassString(className, ignoreExt);
+        const classContent = this.toDartClassString(AssetsTemplate.assetsDataClassName, ignoreExt);
         if (classContent !== undefined) {
             fileContent += '\n';
             fileContent += classContent;
@@ -123,9 +109,20 @@ export class AssetsNode {
         }
 
         let classContent = `class ${className} {\n`;
+
+        if (this.isRoot) {
+            classContent += `  static ${className}? _light;\n`;
+            classContent += `  static ${className}? _dark;\n`;
+            classContent += '\n';
+            classContent += `  factory ${className}.light() => _light ??= ${className}._(brightness: Brightness.light);\n`;
+            classContent += `  factory ${className}.dark() => _dark ??= ${className}._(brightness: Brightness.dark);\n`;
+            classContent += `  factory ${className}.listen(Brightness brightness) => brightness == Brightness.light ? ${className}.light() : ${className}.dark();\n`;
+            classContent += '\n';
+        }
+
         classContent += `  final Brightness _brightness;\n`;
         classContent += '\n';
-        classContent += `  ${className}({\n`;
+        classContent += `  ${className}._({\n`;
         classContent += `    required Brightness brightness,\n`;
         classContent += `  })  : _brightness = brightness`;
 
@@ -135,7 +132,7 @@ export class AssetsNode {
             ?.filter(child => !child.isVariant)
             ?.map((child) => {
                 classContent += ',\n';
-                classContent += `        ${child.fieldName(ignoreExt)} = ${child.privateClassName}(brightness: brightness)`;
+                classContent += `        ${child.fieldName(ignoreExt)} = ${child.privateClassName}._(brightness: brightness)`;
             });
 
         classContent += ';\n';
@@ -163,15 +160,15 @@ export class AssetsNode {
                 }
             });
 
-        classContent += `}\n`;
+        classContent += `}`;
 
         this.children
             ?.filter(child => !child.isHiden)
             ?.filter(child => !child.isVariant)
             ?.filter(child => child.isFolder)
             ?.map((child) => {
-                classContent += '\n';
-                classContent += child.toDartClassString(child.privateClassName, ignoreExt);
+                classContent += '\n\n';
+                classContent += child.toDartClassString(`${child.privateClassName}`, ignoreExt);
             });
 
         return classContent;

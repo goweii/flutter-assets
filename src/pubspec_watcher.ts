@@ -37,11 +37,12 @@ class PubspecWatcher {
             this.timeout = undefined;
         }
         this.timeout = setTimeout(async () => {
-            const oldAssetPath = assetsConfig.assetsPath;
             await assetsConfig.update();
-            await assetsGenerator.generate();
-            if (oldAssetPath !== assetsConfig.assetsPath) {
+            if (assetsConfig.autoGenerate) {
+                await assetsGenerator.generate();
                 assetsWatcher.startWatch();
+            } else {
+                assetsWatcher.stopWatch();
             }
         }, 1000);
     }

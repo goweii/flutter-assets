@@ -11,10 +11,12 @@ export async function activate(context: vscode.ExtensionContext) {
 	registerAllCommands(context);
 
 	await assetsConfig.update();
-	await assetsGenerator.generate();
 
 	pubspecWatcher.startWatch();
-	assetsWatcher.startWatch();
+	if (assetsConfig.autoGenerate) {
+		await assetsGenerator.generate();
+		assetsWatcher.startWatch();
+	}
 }
 
 export function deactivate() {
