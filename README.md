@@ -22,7 +22,7 @@ Add the following configuration information to pubspec.yaml.
 
 ```yaml
 flutter-assets:
-	auto-generate: false
+  auto-generate: false
   assets-path: assets
   output-path: lib/assets
   ignore-ext: false
