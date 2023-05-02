@@ -33,7 +33,6 @@ The meaning of each field is as follows, with default values as shown in the cod
 - **auto-generate**: Automatically generate code when the assets-path directory changes
 - **assets-path**: Directory of assets
 - **output-path**: Directory where the generated dart file is located
-- **output-name**: The generated dart file name, where the class name is in the form of 'UpperCamelCase' for this field
 - **ignore-ext**: whether the generated attribute contains a file suffix name
 
 
