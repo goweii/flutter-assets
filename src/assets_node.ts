@@ -116,7 +116,7 @@ export class AssetsNode {
             classContent += '\n';
             classContent += `  factory ${className}.light() => _light ??= ${className}._(brightness: Brightness.light);\n`;
             classContent += `  factory ${className}.dark() => _dark ??= ${className}._(brightness: Brightness.dark);\n`;
-            classContent += `  factory ${className}.listen(Brightness brightness) => brightness == Brightness.light ? ${className}.light() : ${className}.dark();\n`;
+            classContent += `  factory ${className}.brightness(Brightness brightness) => brightness == Brightness.light ? ${className}.light() : ${className}.dark();\n`;
             classContent += '\n';
         }
 
